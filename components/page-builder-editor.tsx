@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createSection, normalizePageJson, SECTION_LIBRARY, SINGLE_INSTANCE_SECTION_TYPES } from '@/lib/page-schema';
+import { createSection, normalizePageJson, SECTION_LIBRARY, SECTION_VARIANTS, SINGLE_INSTANCE_SECTION_TYPES } from '@/lib/page-schema';
 import { PAGE_SECTION_TYPES, PageSection, SectionType } from '@/lib/types';
 
 type PageBuilderEditorProps = {
@@ -382,7 +382,7 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${section.visible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                        {section.visible ? 'Visible' : 'Hidden'}
+                        {section.visible ? 'Show on public page' : 'Hidden from public page'}
                       </span>
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{section.variant || 'default'}</span>
                     </div>
@@ -430,11 +430,17 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
 
                 <label className="block">
                   <span className="label">Variant</span>
-                  <input
+                  <select
                     className="input mt-2"
                     value={selectedSection.variant}
                     onChange={(event) => updateSection(selectedIndex, { ...selectedSection, variant: event.target.value })}
-                  />
+                  >
+                    {SECTION_VARIANTS[selectedSection.type].map((variant) => (
+                      <option key={variant} value={variant}>
+                        {variant}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
@@ -443,7 +449,7 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
                     type="checkbox"
                     onChange={(event) => updateSection(selectedIndex, { ...selectedSection, visible: event.target.checked })}
                   />
-                  Visible
+                  Show on public page
                 </label>
               </div>
 

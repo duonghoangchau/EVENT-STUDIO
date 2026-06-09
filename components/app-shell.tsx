@@ -19,7 +19,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           <div className="rounded-xl bg-white/10 p-2"><Sparkles size={22} /></div>
           <div>
             <div className="font-bold">Delfi Event Studio</div>
-            <div className="text-xs text-slate-300">AI + Template Builder</div>
+            <div className="text-xs text-slate-300">Event + Template Builder</div>
           </div>
         </Link>
         <nav className="mt-8 space-y-2">

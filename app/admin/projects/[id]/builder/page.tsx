@@ -1,4 +1,5 @@
-import { applyAiDraft, updateSections } from '@/app/actions';
+import { updateSections } from '@/app/actions';
+import { AdminProjectNav } from '@/components/admin-project-nav';
 import { PageBuilderEditor } from '@/components/page-builder-editor';
 import { prisma } from '@/lib/db';
 import { normalizePageJson } from '@/lib/page-schema';
@@ -18,6 +19,7 @@ export default async function BuilderPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
+      <AdminProjectNav current="builder" projectId={project.id} projectName={project.name} projectSlug={project.slug} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Page Builder</h1>
@@ -30,17 +32,6 @@ export default async function BuilderPage({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_minmax(420px,520px)]">
         <div className="space-y-5 min-w-0">
-          <form action={applyAiDraft.bind(null, project.id)} className="section-shell p-5">
-            <h2 className="font-black">AI Draft Assistant</h2>
-            <textarea
-              name="prompt"
-              rows={6}
-              className="input mt-4"
-              placeholder="Tao landing page hoi nghi y khoa, mau xanh, co agenda, speaker, sponsor, form 3 buoc..."
-            />
-            <button className="btn-primary mt-4 w-full">Generate Draft</button>
-          </form>
-
           <PageBuilderEditor action={updateSections.bind(null, project.id)} initialSections={pageJson.sections} />
         </div>
 

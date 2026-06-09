@@ -4,6 +4,17 @@ import { PAGE_SECTION_TYPES, PageJson, PageSection, SectionType } from '@/lib/ty
 const sectionTypeSchema = z.enum(PAGE_SECTION_TYPES);
 export const SINGLE_INSTANCE_SECTION_TYPES: SectionType[] = ['hero', 'form', 'footer', 'map'];
 const singleInstanceSectionTypeSet = new Set<SectionType>(SINGLE_INSTANCE_SECTION_TYPES);
+export const SECTION_VARIANTS: Record<SectionType, string[]> = {
+  hero: ['center', 'fullscreen', 'split'],
+  about: ['two-column', 'stacked'],
+  agenda: ['timeline', 'cards', 'compact'],
+  speakers: ['cards', 'grid', 'spotlight'],
+  sponsors: ['grid', 'logo-strip', 'tiers'],
+  form: ['card', 'split', 'minimal'],
+  faq: ['accordion', 'list'],
+  map: ['simple', 'card'],
+  footer: ['simple', 'dark', 'columns'],
+};
 
 const pageSectionSchema = z.object({
   id: z.string().min(1),
@@ -211,7 +222,7 @@ export function normalizePageJson(value: unknown): PageJson {
         ...cloneSection(fallback),
         ...section,
         id,
-        variant: section.variant || fallback.variant,
+        variant: SECTION_VARIANTS[section.type].includes(section.variant) ? section.variant : fallback.variant,
         order: typeof section.order === 'number' ? section.order : index + 1,
         visible: typeof section.visible === 'boolean' ? section.visible : true,
         data: section.data || {},

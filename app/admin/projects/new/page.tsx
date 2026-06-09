@@ -1,8 +1,10 @@
 import { createProject } from '@/app/actions';
+import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
 
 export default function NewProjectPage() {
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl space-y-6">
+      <AdminBreadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Projects', href: '/admin/projects' }, { label: 'New project' }]} />
       <h1 className="text-3xl font-black">Tao event project</h1>
       <form action={createProject} className="section-shell mt-6 space-y-5 p-6">
         <div>

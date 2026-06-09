@@ -1,3 +1,4 @@
+import { AdminProjectNav } from '@/components/admin-project-nav';
 import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 
@@ -10,9 +11,10 @@ export default async function SubmissionsPage({ params }: { params: Promise<{ id
   const rows = await prisma.submission.findMany({ where: { projectId: project.id }, orderBy: { createdAt: 'desc' }, include: { form: true } });
 
   return (
-    <div>
+    <div className="space-y-6">
+      <AdminProjectNav current="submissions" projectId={project.id} projectName={project.name} projectSlug={project.slug} />
       <h1 className="text-3xl font-black">Submissions</h1>
-      <div className="mt-6 section-shell overflow-hidden">
+      <div className="section-shell overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left">
             <tr>

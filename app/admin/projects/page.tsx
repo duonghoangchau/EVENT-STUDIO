@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
 import { prisma } from '@/lib/db';
 
 export default async function ProjectsPage() {
@@ -6,6 +7,7 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Projects' }]} />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black">Projects</h1>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createProjectFromTemplate } from '@/app/actions';
+import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
 import { prisma } from '@/lib/db';
 import { normalizePageJson } from '@/lib/page-schema';
 import { ThemeConfig } from '@/lib/types';
@@ -9,6 +10,7 @@ export default async function TemplatesPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Templates' }]} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black">Template Gallery</h1>

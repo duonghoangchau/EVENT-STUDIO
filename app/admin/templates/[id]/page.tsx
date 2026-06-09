@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { createProjectFromTemplate } from '@/app/actions';
+import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
 import { prisma } from '@/lib/db';
 import { normalizePageJson } from '@/lib/page-schema';
 import { LandingRenderer } from '@/lib/renderer';
@@ -17,6 +18,7 @@ export default async function TemplatePreviewPage({ params }: { params: Promise<
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Templates', href: '/admin/templates' }, { label: template.name }]} />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link href="/admin/templates" className="text-sm font-semibold text-blue-600">

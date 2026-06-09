@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
 import { prisma } from '@/lib/db';
 import { ArrowRight, Bot, FileText, LayoutTemplate } from 'lucide-react';
 
@@ -7,6 +8,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      <AdminBreadcrumbs items={[{ label: 'Admin' }, { label: 'Dashboard' }]} />
       <div className="rounded-3xl bg-slate-950 p-8 text-white">
         <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div>
@@ -27,7 +29,7 @@ export default async function DashboardPage() {
       <div className="section-shell p-6">
         <h2 className="text-xl font-black">Luong MVP</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-5">
-          {['Create Project', 'AI Draft', 'Edit Sections', 'Preview', 'Publish/Export'].map((item) => (
+          {['Create Project', 'Edit Sections', 'Build Form', 'Preview', 'Publish/Export'].map((item) => (
             <div key={item} className="rounded-2xl bg-slate-50 p-4 text-sm font-bold">
               {item}
             </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminProjectNav } from '@/components/admin-project-nav';
 import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 
@@ -10,6 +11,7 @@ export default async function ProjectDetail({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-6">
+      <AdminProjectNav current="overview" projectId={project.id} projectName={project.name} projectSlug={project.slug} />
       <div className="section-shell p-6">
         <h1 className="text-3xl font-black">{project.name}</h1>
         <p className="mt-2 text-slate-500">/{project.slug}</p>

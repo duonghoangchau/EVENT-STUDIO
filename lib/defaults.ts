@@ -10,7 +10,7 @@ export const defaultTheme: ThemeConfig = {
 };
 
 export const defaultSections: PageSection[] = [
-  { id: 'hero-1', type: 'hero', variant: 'center', order: 1, visible: true, data: { badge: 'Delfi Event', title: 'Sự kiện chuyên nghiệp', subtitle: 'Tạo landing page sự kiện nhanh bằng template, theme và AI.', cta: 'Đăng ký tham dự' } },
+  { id: 'hero-1', type: 'hero', variant: 'center', order: 1, visible: true, data: { badge: 'Delfi Event', title: 'Sự kiện chuyên nghiệp', subtitle: 'Tạo landing page sự kiện nhanh bằng template và theme có sẵn.', cta: 'Đăng ký tham dự' } },
   { id: 'about-1', type: 'about', variant: 'two-column', order: 2, visible: true, data: { title: 'Thông tin sự kiện', body: 'Trang landing page được dựng bằng section JSON và render bằng component chuẩn.' } },
   { id: 'agenda-1', type: 'agenda', variant: 'timeline', order: 3, visible: true, data: { title: 'Agenda', items: ['13:00 - Check-in', '14:00 - Keynote', '15:00 - Networking'] } },
   { id: 'form-1', type: 'form', variant: 'card', order: 4, visible: true, data: { title: 'Đăng ký tham dự' } },

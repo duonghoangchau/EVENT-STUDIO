@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { updateFormSchema } from '@/app/actions';
+import { AdminProjectNav } from '@/components/admin-project-nav';
 import { FormSchemaEditor } from '@/components/form-schema-editor';
 import { prisma } from '@/lib/db';
 import { normalizeFormSchema } from '@/lib/form-schema';
@@ -13,6 +14,7 @@ export default async function FormsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="space-y-6">
+      <AdminProjectNav current="forms" projectId={project.id} projectName={project.name} projectSlug={project.slug} />
       <div>
         <h1 className="text-3xl font-black">Form Builder</h1>
         <p className="mt-2 text-slate-500">Tuy chinh step, field, options va cach thu thap thong tin dang ky.</p>
