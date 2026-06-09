@@ -10,6 +10,7 @@ import { normalizeFormSchema } from '@/lib/form-schema';
 import { defaultFormSchema, defaultSections, defaultTheme } from '@/lib/defaults';
 import { normalizePageJson } from '@/lib/page-schema';
 import { verifyPassword } from '@/lib/password';
+import { resolveLocalizedText } from '@/lib/preferences';
 import { FormField, FormSchema } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -189,7 +190,7 @@ export async function updateFormSchema(formId: number, formData: FormData) {
     await prisma.eventForm.update({
       where: { id: formId },
       data: {
-        name: parsed.title,
+        name: resolveLocalizedText(parsed.title, 'vi', 'Registration Form'),
         schemaJson: parsed,
       },
     });

@@ -1,4 +1,4 @@
-import { FORM_FIELD_TYPES, FormField, FormFieldType, FormSchema, FormStep } from '@/lib/types';
+import { FORM_FIELD_TYPES, FormField, FormFieldType, FormSchema, FormStep, LocalizedText } from '@/lib/types';
 
 const FIELD_TYPE_SET = new Set<FormFieldType>(FORM_FIELD_TYPES);
 
@@ -10,6 +10,31 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function asString(value: unknown, fallback = '') {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+function asLocalizedText(value: unknown, fallback = ''): LocalizedText {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+
+  const record = asRecord(value);
+  if (!record) return fallback;
+
+  const vi = typeof record.vi === 'string' ? record.vi : undefined;
+  const en = typeof record.en === 'string' ? record.en : undefined;
+
+  if (vi || en) {
+    return {
+      ...(vi ? { vi } : {}),
+      ...(en ? { en } : {}),
+    };
+  }
+
+  return fallback;
+}
+
+function localizedTextToString(value: LocalizedText | undefined, fallback = '') {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') return value.vi || value.en || fallback;
   return fallback;
 }
 
@@ -37,8 +62,8 @@ function normalizeOptions(value: unknown) {
   if (!Array.isArray(value)) return undefined;
 
   const options = value
-    .map((item) => asString(item).trim())
-    .filter(Boolean);
+    .map((item) => asLocalizedText(item))
+    .filter((item) => localizedTextToString(item).trim());
 
   return options.length ? options : undefined;
 }
@@ -47,8 +72,9 @@ function normalizeField(value: unknown, stepIndex: number, fieldIndex: number): 
   const field = asRecord(value) ?? {};
   const type = asString(field.type, 'text') as FormFieldType;
   const safeType = FIELD_TYPE_SET.has(type) ? type : 'text';
-  const label = asString(field.label, `Field ${fieldIndex + 1}`).trim() || `Field ${fieldIndex + 1}`;
-  const name = normalizeId(asString(field.name, label), `field_${stepIndex + 1}_${fieldIndex + 1}`);
+  const label = asLocalizedText(field.label, `Field ${fieldIndex + 1}`);
+  const labelText = localizedTextToString(label, `Field ${fieldIndex + 1}`).trim() || `Field ${fieldIndex + 1}`;
+  const name = normalizeId(asString(field.name, labelText), `field_${stepIndex + 1}_${fieldIndex + 1}`);
 
   return {
     id: normalizeId(asString(field.id, name), `field_${stepIndex + 1}_${fieldIndex + 1}`),
@@ -56,18 +82,18 @@ function normalizeField(value: unknown, stepIndex: number, fieldIndex: number): 
     name,
     type: safeType,
     required: asBoolean(field.required, false),
-    placeholder: asString(field.placeholder).trim() || undefined,
+    placeholder: field.placeholder !== undefined ? asLocalizedText(field.placeholder) : undefined,
     options: ['select', 'radio', 'checkbox'].includes(safeType) ? normalizeOptions(field.options) : undefined,
   };
 }
 
 function normalizeStep(value: unknown, stepIndex: number): FormStep {
   const step = asRecord(value) ?? {};
-  const title = asString(step.title, `Step ${stepIndex + 1}`).trim() || `Step ${stepIndex + 1}`;
+  const title = asLocalizedText(step.title, `Step ${stepIndex + 1}`);
   const fields = Array.isArray(step.fields) ? step.fields.map((field, index) => normalizeField(field, stepIndex, index)) : [];
 
   return {
-    id: normalizeId(asString(step.id, title), `step_${stepIndex + 1}`),
+    id: normalizeId(asString(step.id, localizedTextToString(title, `Step ${stepIndex + 1}`)), `step_${stepIndex + 1}`),
     title,
     fields,
   };
@@ -79,7 +105,7 @@ export function normalizeFormSchema(value: unknown): FormSchema {
   const steps = Array.isArray(schema.steps) ? schema.steps.map((step, index) => normalizeStep(step, index)) : [];
 
   return {
-    title: asString(schema.title, 'Registration Form').trim() || 'Registration Form',
+    title: asLocalizedText(schema.title, 'Registration Form'),
     mode,
     steps,
   };

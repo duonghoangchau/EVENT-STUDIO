@@ -3,6 +3,7 @@ export const PAGE_SECTION_TYPES = ['hero', 'about', 'agenda', 'speakers', 'spons
 export type SectionType = typeof PAGE_SECTION_TYPES[number];
 
 export const FORM_FIELD_TYPES = ['text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'file', 'consent'] as const;
+export type LocalizedText = string | { vi?: string; en?: string };
 
 export type PageSection = {
   id: string;
@@ -30,13 +31,13 @@ export type FormFieldType = typeof FORM_FIELD_TYPES[number];
 
 export type FormField = {
   id: string;
-  label: string;
+  label: LocalizedText;
   name: string;
   type: FormFieldType;
   required: boolean;
-  placeholder?: string;
-  options?: string[];
+  placeholder?: LocalizedText;
+  options?: LocalizedText[];
 };
 
-export type FormStep = { id: string; title: string; fields: FormField[] };
-export type FormSchema = { title: string; mode: 'single' | 'multi'; steps: FormStep[] };
+export type FormStep = { id: string; title: LocalizedText; fields: FormField[] };
+export type FormSchema = { title: LocalizedText; mode: 'single' | 'multi'; steps: FormStep[] };

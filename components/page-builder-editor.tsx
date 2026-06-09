@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createSection, normalizePageJson, SECTION_LIBRARY, SECTION_VARIANTS, SINGLE_INSTANCE_SECTION_TYPES } from '@/lib/page-schema';
+import { usePreferences } from '@/components/preferences-provider';
+import { createSection, normalizePageJson, SECTION_VARIANTS, SINGLE_INSTANCE_SECTION_TYPES } from '@/lib/page-schema';
+import { resolveLocalizedText, sectionTypeLabel } from '@/lib/preferences';
 import { PAGE_SECTION_TYPES, PageSection, SectionType } from '@/lib/types';
 
 type PageBuilderEditorProps = {
@@ -9,7 +11,7 @@ type PageBuilderEditorProps = {
   initialSections: PageSection[];
 };
 
-type ItemShape = Record<string, string>;
+type ItemShape = Record<string, unknown>;
 
 function normalizeOrders(sections: PageSection[]) {
   return sections.map((section, index) => ({ ...section, order: index + 1 }));
@@ -23,20 +25,63 @@ function reorderSections(sections: PageSection[], fromIndex: number, toIndex: nu
   return normalizeOrders(next);
 }
 
-function sectionHeadline(section: PageSection) {
-  const data = section.data || {};
-  if (typeof data.title === 'string' && data.title.trim()) return data.title;
-  if (typeof data.location === 'string' && data.location.trim()) return data.location;
-  if (typeof data.text === 'string' && data.text.trim()) return data.text;
-  return SECTION_LIBRARY[section.type].label;
+function textValue(value: unknown, language: 'vi' | 'en', fallback = '') {
+  return resolveLocalizedText(value, language, fallback);
 }
 
-function sectionMeta(section: PageSection) {
+function localizedEditorValue(value: unknown, language: 'vi' | 'en') {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    const localized = value as { vi?: unknown; en?: unknown };
+    const candidate = localized[language];
+    if (typeof candidate === 'string') return candidate;
+  }
+
+  return '';
+}
+
+function setLocalizedValue(currentValue: unknown, language: 'vi' | 'en', nextValue: string) {
+  if (typeof currentValue === 'object' && currentValue !== null && !Array.isArray(currentValue)) {
+    const localized = currentValue as { vi?: string; en?: string };
+    if ('vi' in localized || 'en' in localized) {
+      return {
+        ...localized,
+        [language]: nextValue,
+      };
+    }
+  }
+
+  const baseValue =
+    typeof currentValue === 'string' || typeof currentValue === 'number' || typeof currentValue === 'boolean' ? String(currentValue) : '';
+
+  return {
+    vi: language === 'vi' ? nextValue : baseValue,
+    en: language === 'en' ? nextValue : baseValue,
+  };
+}
+
+function sectionHeadline(section: PageSection, language: 'vi' | 'en') {
+  const data = section.data || {};
+  const title = textValue(data.title, language);
+  const location = textValue(data.location, language);
+  const footerText = textValue(data.text, language);
+  if (title.trim()) return title;
+  if (location.trim()) return location;
+  if (footerText.trim()) return footerText;
+  return sectionTypeLabel(section.type, language);
+}
+
+function sectionMeta(section: PageSection, language: 'vi' | 'en') {
   const data = section.data || {};
   if (Array.isArray(data.items)) return `${data.items.length} item${data.items.length === 1 ? '' : 's'}`;
-  if (typeof data.subtitle === 'string' && data.subtitle.trim()) return data.subtitle;
-  if (typeof data.body === 'string' && data.body.trim()) return data.body;
-  if (typeof data.description === 'string' && data.description.trim()) return data.description;
+  const subtitle = textValue(data.subtitle, language);
+  const body = textValue(data.body, language);
+  const description = textValue(data.description, language);
+  if (subtitle.trim()) return subtitle;
+  if (body.trim()) return body;
+  if (description.trim()) return description;
   return section.variant || 'default';
 }
 
@@ -48,37 +93,68 @@ function ItemEditor({
 }: {
   items: ItemShape[];
   onChange: (items: ItemShape[]) => void;
-  fields: Array<{ key: string; label: string; multiline?: boolean }>;
+  fields: Array<{ key: string; label: string; multiline?: boolean; localizable?: boolean }>;
   addLabel: string;
 }) {
+  const { language, translate } = usePreferences();
+
   return (
     <div className="space-y-3">
       {items.map((item, itemIndex) => (
-        <details key={itemIndex} className="rounded-2xl border border-slate-200 bg-slate-50 p-4" open={itemIndex === 0}>
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-            {item[fields[0]?.key] || `${addLabel.replace('Add ', '')} ${itemIndex + 1}`}
+        <details key={itemIndex} className="rounded-2xl border app-border app-surface-alt p-4" open={itemIndex === 0}>
+          <summary className="cursor-pointer text-sm font-semibold app-strong">
+            {textValue(item[fields[0]?.key], language) || `${textValue(addLabel, language)} ${itemIndex + 1}`}
           </summary>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {fields.map((field) => (
               <label key={field.key} className={`block ${field.multiline ? 'md:col-span-2' : ''}`}>
                 <span className="label">{field.label}</span>
-                {field.multiline ? (
-                  <textarea
-                    className="input mt-2 min-h-24"
-                    value={item[field.key] || ''}
-                    onChange={(event) =>
-                      onChange(items.map((current, index) => (index === itemIndex ? { ...current, [field.key]: event.target.value } : current)))
-                    }
-                  />
+                {field.localizable === false ? (
+                  field.multiline ? (
+                    <textarea
+                      className="input mt-2 min-h-24"
+                      value={textValue(item[field.key], language)}
+                      onChange={(event) =>
+                        onChange(items.map((current, index) => (index === itemIndex ? { ...current, [field.key]: event.target.value } : current)))
+                      }
+                    />
+                  ) : (
+                    <input
+                      className="input mt-2"
+                      value={textValue(item[field.key], language)}
+                      onChange={(event) =>
+                        onChange(items.map((current, index) => (index === itemIndex ? { ...current, [field.key]: event.target.value } : current)))
+                      }
+                    />
+                  )
                 ) : (
-                  <input
-                    className="input mt-2"
-                    value={item[field.key] || ''}
-                    onChange={(event) =>
-                      onChange(items.map((current, index) => (index === itemIndex ? { ...current, [field.key]: event.target.value } : current)))
-                    }
-                  />
+                  <div className="mt-2 grid gap-3 lg:grid-cols-2">
+                    <LocalizedTextInput
+                      label="VI"
+                      multiline={field.multiline}
+                      value={localizedEditorValue(item[field.key], 'vi')}
+                      onChange={(value) =>
+                        onChange(
+                          items.map((current, index) =>
+                            index === itemIndex ? { ...current, [field.key]: setLocalizedValue(current[field.key], 'vi', value) } : current
+                          )
+                        )
+                      }
+                    />
+                    <LocalizedTextInput
+                      label="EN"
+                      multiline={field.multiline}
+                      value={localizedEditorValue(item[field.key], 'en')}
+                      onChange={(value) =>
+                        onChange(
+                          items.map((current, index) =>
+                            index === itemIndex ? { ...current, [field.key]: setLocalizedValue(current[field.key], 'en', value) } : current
+                          )
+                        )
+                      }
+                    />
+                  </div>
                 )}
               </label>
             ))}
@@ -86,7 +162,7 @@ function ItemEditor({
 
           <div className="mt-3 flex justify-end">
             <button className="btn-secondary" type="button" onClick={() => onChange(items.filter((_, index) => index !== itemIndex))}>
-              Remove item
+              {translate('removeItem')}
             </button>
           </div>
         </details>
@@ -99,6 +175,29 @@ function ItemEditor({
   );
 }
 
+function LocalizedTextInput({
+  label,
+  multiline,
+  value,
+  onChange,
+}: {
+  label: string;
+  multiline?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[11px] font-bold uppercase tracking-[0.16em] app-muted">{label}</div>
+      {multiline ? (
+        <textarea className="input min-h-24" value={value} onChange={(event) => onChange(event.target.value)} />
+      ) : (
+        <input className="input" value={value} onChange={(event) => onChange(event.target.value)} />
+      )}
+    </div>
+  );
+}
+
 function SectionFields({
   section,
   onChange,
@@ -106,34 +205,24 @@ function SectionFields({
   section: PageSection;
   onChange: (section: PageSection) => void;
 }) {
+  const { translate } = usePreferences();
   const data = section.data || {};
-  const setDataValue = (key: string, value: unknown) => onChange({ ...section, data: { ...data, [key]: value } });
+  const setDataValueRaw = (key: string, value: unknown) => onChange({ ...section, data: { ...data, [key]: value } });
+  const localTextField = (label: string, key: string, options?: { multiline?: boolean }) => (
+    <div className="grid gap-3 lg:grid-cols-2">
+      <LocalizedTextInput label={`${label} VI`} multiline={options?.multiline} value={localizedEditorValue(data[key], 'vi')} onChange={(value) => onChange({ ...section, data: { ...data, [key]: setLocalizedValue(data[key], 'vi', value) } })} />
+      <LocalizedTextInput label={`${label} EN`} multiline={options?.multiline} value={localizedEditorValue(data[key], 'en')} onChange={(value) => onChange({ ...section, data: { ...data, [key]: setLocalizedValue(data[key], 'en', value) } })} />
+    </div>
+  );
 
   if (section.type === 'hero') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Badge</span>
-          <input className="input mt-2" value={String(data.badge || '')} onChange={(event) => setDataValue('badge', event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Subtitle</span>
-          <textarea className="input mt-2 min-h-28" value={String(data.subtitle || '')} onChange={(event) => setDataValue('subtitle', event.target.value)} />
-        </label>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="label">Primary CTA</span>
-            <input className="input mt-2" value={String(data.cta || '')} onChange={(event) => setDataValue('cta', event.target.value)} />
-          </label>
-          <label className="block">
-            <span className="label">Secondary CTA</span>
-            <input className="input mt-2" value={String(data.secondary_cta || '')} onChange={(event) => setDataValue('secondary_cta', event.target.value)} />
-          </label>
-        </div>
+        {localTextField(translate('badge'), 'badge')}
+        {localTextField(translate('title'), 'title')}
+        {localTextField(translate('subtitle'), 'subtitle', { multiline: true })}
+        {localTextField(translate('primaryCta'), 'cta')}
+        {localTextField(translate('secondaryCta'), 'secondary_cta')}
       </div>
     );
   }
@@ -141,14 +230,8 @@ function SectionFields({
   if (section.type === 'about') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Body</span>
-          <textarea className="input mt-2 min-h-32" value={String(data.body || '')} onChange={(event) => setDataValue('body', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
+        {localTextField(translate('body'), 'body', { multiline: true })}
       </div>
     );
   }
@@ -156,19 +239,16 @@ function SectionFields({
   if (section.type === 'agenda') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
         <ItemEditor
-          addLabel="Add agenda item"
+          addLabel={translate('addAgendaItem')}
           fields={[
-            { key: 'time', label: 'Time' },
-            { key: 'title', label: 'Title' },
-            { key: 'description', label: 'Description', multiline: true },
+            { key: 'time', label: translate('time'), localizable: false },
+            { key: 'title', label: translate('title') },
+            { key: 'description', label: translate('description'), multiline: true },
           ]}
           items={Array.isArray(data.items) ? (data.items as ItemShape[]) : []}
-          onChange={(items) => setDataValue('items', items)}
+          onChange={(items) => setDataValueRaw('items', items)}
         />
       </div>
     );
@@ -177,19 +257,16 @@ function SectionFields({
   if (section.type === 'speakers') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
         <ItemEditor
-          addLabel="Add speaker"
+          addLabel={translate('addSpeaker')}
           fields={[
-            { key: 'name', label: 'Name' },
-            { key: 'position', label: 'Position' },
-            { key: 'avatar', label: 'Avatar URL' },
+            { key: 'name', label: translate('name') },
+            { key: 'position', label: translate('position') },
+            { key: 'avatar', label: translate('avatarUrl'), localizable: false },
           ]}
           items={Array.isArray(data.items) ? (data.items as ItemShape[]) : []}
-          onChange={(items) => setDataValue('items', items)}
+          onChange={(items) => setDataValueRaw('items', items)}
         />
       </div>
     );
@@ -198,18 +275,15 @@ function SectionFields({
   if (section.type === 'sponsors') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
         <ItemEditor
-          addLabel="Add sponsor"
+          addLabel={translate('addSponsor')}
           fields={[
-            { key: 'name', label: 'Name' },
-            { key: 'tier', label: 'Tier' },
+            { key: 'name', label: translate('name') },
+            { key: 'tier', label: translate('tier') },
           ]}
           items={Array.isArray(data.items) ? (data.items as ItemShape[]) : []}
-          onChange={(items) => setDataValue('items', items)}
+          onChange={(items) => setDataValueRaw('items', items)}
         />
       </div>
     );
@@ -218,18 +292,9 @@ function SectionFields({
   if (section.type === 'form') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Description</span>
-          <textarea className="input mt-2 min-h-24" value={String(data.description || '')} onChange={(event) => setDataValue('description', event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="label">Button text</span>
-          <input className="input mt-2" value={String(data.button_text || '')} onChange={(event) => setDataValue('button_text', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
+        {localTextField(translate('description'), 'description', { multiline: true })}
+        {localTextField(translate('buttonText'), 'button_text')}
       </div>
     );
   }
@@ -237,18 +302,15 @@ function SectionFields({
   if (section.type === 'faq') {
     return (
       <div className="grid gap-4">
-        <label className="block">
-          <span className="label">Title</span>
-          <input className="input mt-2" value={String(data.title || '')} onChange={(event) => setDataValue('title', event.target.value)} />
-        </label>
+        {localTextField(translate('title'), 'title')}
         <ItemEditor
-          addLabel="Add FAQ item"
+          addLabel={translate('addFaqItem')}
           fields={[
-            { key: 'question', label: 'Question' },
-            { key: 'answer', label: 'Answer', multiline: true },
+            { key: 'question', label: translate('question') },
+            { key: 'answer', label: translate('answer'), multiline: true },
           ]}
           items={Array.isArray(data.items) ? (data.items as ItemShape[]) : []}
-          onChange={(items) => setDataValue('items', items)}
+          onChange={(items) => setDataValueRaw('items', items)}
         />
       </div>
     );
@@ -256,22 +318,17 @@ function SectionFields({
 
   if (section.type === 'map') {
     return (
-      <label className="block">
-        <span className="label">Location</span>
-        <input className="input mt-2" value={String(data.location || '')} onChange={(event) => setDataValue('location', event.target.value)} />
-      </label>
+      localTextField(translate('location'), 'location')
     );
   }
 
   return (
-    <label className="block">
-      <span className="label">Footer text</span>
-      <textarea className="input mt-2 min-h-24" value={String(data.text || '')} onChange={(event) => setDataValue('text', event.target.value)} />
-    </label>
+    localTextField(translate('footerText'), 'text', { multiline: true })
   );
 }
 
 export function PageBuilderEditor({ action, initialSections }: PageBuilderEditorProps) {
+  const { language, translate } = usePreferences();
   const [sections, setSections] = useState<PageSection[]>(normalizePageJson({ sections: initialSections }).sections);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(sections[0]?.id ?? null);
@@ -314,23 +371,23 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
     <form action={action} className="section-shell p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-black">Page Builder</h2>
-          <p className="mt-1 text-sm text-slate-500">Select one block at a time, keep the queue compact, and edit details in a focused panel.</p>
+          <h2 className="font-black app-strong">{translate('pageBuilder')}</h2>
+          <p className="mt-1 text-sm app-muted">{translate('editBlockHint')}</p>
         </div>
         <button className="btn-primary" type="submit">
-          Save page
+          {translate('savePage')}
         </button>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-3 text-sm font-semibold text-slate-700">Add section</div>
+      <div className="mt-5 rounded-2xl border app-border app-surface-alt p-4">
+        <div className="mb-3 text-sm font-semibold app-strong">{translate('addSection')}</div>
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {PAGE_SECTION_TYPES.map((type) => {
             const isDisabled = singleInstanceTypes.has(type) && sections.some((section) => section.type === type);
 
             return (
               <button key={type} className="btn-secondary justify-start disabled:cursor-not-allowed disabled:opacity-50" disabled={isDisabled} type="button" onClick={() => addSection(type)}>
-                {SECTION_LIBRARY[type].label}
+                {sectionTypeLabel(type, language)}
               </button>
             );
           })}
@@ -339,11 +396,11 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
 
       <div className="mt-6 grid gap-5 2xl:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+          <div className="rounded-3xl border app-border app-surface-alt p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-black text-slate-900">Section queue</h3>
-                <p className="mt-1 text-sm text-slate-500">{sections.length} block{sections.length === 1 ? '' : 's'} on page</p>
+                <h3 className="font-black app-strong">{translate('sectionQueue')}</h3>
+                <p className="mt-1 text-sm app-muted">{sections.length} {translate('blocksOnPage')}</p>
               </div>
             </div>
 
@@ -355,7 +412,7 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
                   <button
                     key={section.id}
                     className={`block w-full rounded-2xl border p-4 text-left transition ${
-                      isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                      isSelected ? 'border-blue-500 bg-blue-50 shadow-sm' : 'app-border app-panel'
                     }`}
                     draggable
                     type="button"
@@ -371,20 +428,20 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                          {SECTION_LIBRARY[section.type].label}
+                        <div className="rounded-full app-soft px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] app-muted">
+                          {sectionTypeLabel(section.type, language)}
                         </div>
-                        <div className="mt-3 text-sm font-bold text-slate-900">{sectionHeadline(section)}</div>
-                        <div className="mt-1 line-clamp-2 text-xs text-slate-500">{sectionMeta(section)}</div>
+                        <div className="mt-3 text-sm font-bold app-strong">{sectionHeadline(section, language)}</div>
+                        <div className="mt-1 line-clamp-2 text-xs app-muted">{sectionMeta(section, language)}</div>
                       </div>
-                      <div className="text-xs font-semibold text-slate-400">#{index + 1}</div>
+                      <div className="text-xs font-semibold app-muted">#{index + 1}</div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${section.visible ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                        {section.visible ? 'Show on public page' : 'Hidden from public page'}
+                        {section.visible ? translate('showOnPublicPage') : translate('hiddenFromPublicPage')}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{section.variant || 'default'}</span>
+                      <span className="rounded-full app-soft px-2.5 py-1 text-xs font-semibold app-muted">{section.variant || 'default'}</span>
                     </div>
                   </button>
                 );
@@ -395,32 +452,32 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
 
         <div className="min-w-0 space-y-4">
           {selectedSection ? (
-            <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm 2xl:sticky 2xl:top-6">
+            <div className="min-w-0 rounded-3xl border app-border app-surface p-5 shadow-sm 2xl:sticky 2xl:top-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="rounded-full bg-blue-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-700">
-                    {SECTION_LIBRARY[selectedSection.type].label}
+                  <div className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ background: 'var(--app-primary-soft)', color: 'var(--app-primary-soft-text)' }}>
+                    {sectionTypeLabel(selectedSection.type, language)}
                   </div>
-                  <h3 className="mt-3 text-xl font-black text-slate-900">{sectionHeadline(selectedSection)}</h3>
-                  <p className="mt-1 text-sm text-slate-500">Edit this block while the rest of the page stays compact in the queue.</p>
+                  <h3 className="mt-3 text-xl font-black app-strong">{sectionHeadline(selectedSection, language)}</h3>
+                  <p className="mt-1 text-sm app-muted">{translate('editBlockHint')}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
                   <button className="btn-secondary" type="button" disabled={selectedIndex <= 0} onClick={() => moveSection(selectedIndex, -1)}>
-                    Move up
+                    {translate('moveUp')}
                   </button>
                   <button className="btn-secondary" type="button" disabled={selectedIndex >= sections.length - 1} onClick={() => moveSection(selectedIndex, 1)}>
-                    Move down
+                    {translate('moveDown')}
                   </button>
                   <button className="btn-secondary" type="button" onClick={() => removeSection(selectedIndex)}>
-                    Remove
+                    {translate('remove')}
                   </button>
                 </div>
               </div>
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="label">Section id</span>
+                  <span className="label">{translate('sectionId')}</span>
                   <input
                     className="input mt-2"
                     value={selectedSection.id}
@@ -429,7 +486,7 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
                 </label>
 
                 <label className="block">
-                  <span className="label">Variant</span>
+                  <span className="label">{translate('variant')}</span>
                   <select
                     className="input mt-2"
                     value={selectedSection.variant}
@@ -443,13 +500,13 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
                   </select>
                 </label>
 
-                <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                <label className="inline-flex items-center gap-2 text-sm font-medium app-strong sm:col-span-2">
                   <input
                     checked={selectedSection.visible}
                     type="checkbox"
                     onChange={(event) => updateSection(selectedIndex, { ...selectedSection, visible: event.target.checked })}
                   />
-                  Show on public page
+                  {translate('showOnPublicPage')}
                 </label>
               </div>
 
@@ -458,13 +515,13 @@ export function PageBuilderEditor({ action, initialSections }: PageBuilderEditor
               </div>
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">
-              Add a section from the library to start building the page.
+            <div className="rounded-3xl border border-dashed app-border app-surface-alt p-10 text-center app-muted">
+              {translate('addSectionPlaceholder')}
             </div>
           )}
 
-          <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <summary className="cursor-pointer font-semibold">Advanced JSON preview</summary>
+          <details className="rounded-2xl border app-border app-surface-alt p-4">
+            <summary className="cursor-pointer font-semibold app-strong">{translate('advancedJsonPreview')}</summary>
             <pre className="mt-3 max-h-80 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{JSON.stringify({ sections }, null, 2)}</pre>
           </details>
         </div>

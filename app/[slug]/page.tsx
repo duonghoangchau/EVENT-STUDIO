@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { normalizePageJson } from '@/lib/page-schema';
+import { getServerPreferences } from '@/lib/preferences-server';
 import { LandingRenderer } from '@/lib/renderer';
 import { ThemeConfig } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -14,6 +15,7 @@ export default async function PublicLandingPage({ params }: { params: Promise<{ 
 
   const pageJson = normalizePageJson(project.pageJson);
   const theme = project.themeJson as ThemeConfig;
+  const preferences = await getServerPreferences({ defaultLanguage: project.language === 'en' ? 'en' : 'vi' });
 
-  return <LandingRenderer sections={pageJson.sections} theme={theme} formSlug={project.forms[0]?.slug} projectSlug={project.slug} />;
+  return <LandingRenderer sections={pageJson.sections} theme={theme} language={preferences.language} formSlug={project.forms[0]?.slug} projectSlug={project.slug} />;
 }

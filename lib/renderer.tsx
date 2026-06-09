@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PreferenceLanguage, resolveLocalizedText, t } from '@/lib/preferences';
 import { PageSection, ThemeConfig } from '@/lib/types';
 
 type JsonRecord = Record<string, unknown>;
@@ -11,76 +12,78 @@ function asArray(value: unknown) {
   return Array.isArray(value) ? value : [];
 }
 
-function asText(value: unknown, fallback = '') {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+function asText(value: unknown, language: PreferenceLanguage, fallback = '') {
+  const localized = resolveLocalizedText(value, language);
+  if (localized) return localized;
+
   if (isRecord(value)) {
     const preferredKeys = ['title', 'name', 'label', 'text', 'question', 'answer', 'position', 'role', 'time'];
     for (const key of preferredKeys) {
-      const candidate = value[key];
-      if (typeof candidate === 'string' && candidate.trim()) return candidate;
+      const candidate = resolveLocalizedText(value[key], language);
+      if (candidate.trim()) return candidate;
     }
   }
+
   return fallback;
 }
 
-function speakerItem(value: unknown) {
+function speakerItem(value: unknown, language: PreferenceLanguage) {
   if (!isRecord(value)) {
     return {
-      name: asText(value, 'Speaker'),
-      position: 'Guest speaker',
+      name: asText(value, language, t(language, 'speakerFallback')),
+      position: t(language, 'guestSpeaker'),
       avatar: '',
     };
   }
 
   return {
-    name: asText(value.name, 'Speaker'),
-    position: asText(value.position || value.role, 'Guest speaker'),
-    avatar: asText(value.avatar || value.image || value.photo),
+    name: asText(value.name, language, t(language, 'speakerFallback')),
+    position: asText(value.position || value.role, language, t(language, 'guestSpeaker')),
+    avatar: asText(value.avatar || value.image || value.photo, language),
   };
 }
 
-function agendaItem(value: unknown) {
+function agendaItem(value: unknown, language: PreferenceLanguage) {
   if (!isRecord(value)) {
     return {
-      title: asText(value, 'Agenda item'),
+      title: asText(value, language, t(language, 'agendaItemFallback')),
       time: '',
       description: '',
     };
   }
 
   return {
-    title: asText(value.title || value.name, 'Agenda item'),
-    time: asText(value.time),
-    description: asText(value.description || value.body),
+    title: asText(value.title || value.name, language, t(language, 'agendaItemFallback')),
+    time: asText(value.time, language),
+    description: asText(value.description || value.body, language),
   };
 }
 
-function sponsorItem(value: unknown) {
+function sponsorItem(value: unknown, language: PreferenceLanguage) {
   if (!isRecord(value)) {
     return {
-      name: asText(value, 'Sponsor'),
+      name: asText(value, language, t(language, 'sponsorFallback')),
       tier: '',
     };
   }
 
   return {
-    name: asText(value.name || value.label, 'Sponsor'),
-    tier: asText(value.tier || value.level),
+    name: asText(value.name || value.label, language, t(language, 'sponsorFallback')),
+    tier: asText(value.tier || value.level, language),
   };
 }
 
-function faqItem(value: unknown) {
+function faqItem(value: unknown, language: PreferenceLanguage) {
   if (!isRecord(value)) {
     return {
-      question: asText(value, 'Question'),
-      answer: 'Thong tin se duoc cap nhat boi ban to chuc.',
+      question: asText(value, language, t(language, 'questionFallback')),
+      answer: t(language, 'faqFallbackAnswer'),
     };
   }
 
   return {
-    question: asText(value.question || value.title, 'Question'),
-    answer: asText(value.answer || value.body, 'Thong tin se duoc cap nhat boi ban to chuc.'),
+    question: asText(value.question || value.title, language, t(language, 'questionFallback')),
+    answer: asText(value.answer || value.body, language, t(language, 'faqFallbackAnswer')),
   };
 }
 
@@ -93,26 +96,40 @@ function registrationHref(projectSlug?: string, formSlug?: string) {
 export function LandingRenderer({
   sections,
   theme,
+  language,
   formSlug,
   projectSlug,
 }: {
   sections: PageSection[];
   theme: ThemeConfig;
+  language: PreferenceLanguage;
   formSlug?: string;
   projectSlug?: string;
 }) {
   const visible = [...sections].filter((section) => section.visible).sort((a, b) => a.order - b.order);
 
   return (
-    <div className="min-h-screen bg-white" style={{ ['--primary' as any]: theme.primary }}>
+    <div className="min-h-screen app-surface app-text" style={{ ['--primary' as never]: theme.primary }}>
       {visible.map((section) => (
-        <Section key={section.id} section={section} theme={theme} formSlug={formSlug} projectSlug={projectSlug} />
+        <Section key={section.id} section={section} theme={theme} language={language} formSlug={formSlug} projectSlug={projectSlug} />
       ))}
     </div>
   );
 }
 
-function Section({ section, theme, formSlug, projectSlug }: { section: PageSection; theme: ThemeConfig; formSlug?: string; projectSlug?: string }) {
+function Section({
+  section,
+  theme,
+  language,
+  formSlug,
+  projectSlug,
+}: {
+  section: PageSection;
+  theme: ThemeConfig;
+  language: PreferenceLanguage;
+  formSlug?: string;
+  projectSlug?: string;
+}) {
   const d = section.data || {};
 
   if (section.type === 'hero') {
@@ -122,12 +139,14 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
         style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
       >
         <div className="mx-auto max-w-4xl text-white">
-          <div className="mb-5 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">{d.badge || 'Event'}</div>
-          <h1 className="text-4xl font-black tracking-tight md:text-6xl">{d.title || 'Event Landing Page'}</h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-white/85">{d.subtitle || 'Thong tin su kien'}</p>
+          <div className="mb-5 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
+            {asText(d.badge, language, t(language, 'event'))}
+          </div>
+          <h1 className="text-4xl font-black tracking-tight md:text-6xl">{asText(d.title, language, t(language, 'eventLandingPage'))}</h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-white/85">{asText(d.subtitle, language, t(language, 'eventInfo'))}</p>
           <div className="mt-8">
             <Link href={registrationHref(projectSlug, formSlug)} className="rounded-2xl bg-white px-6 py-3 font-bold text-slate-950 shadow-lg">
-              {d.cta || 'Dang ky ngay'}
+              {asText(d.cta, language, t(language, 'registerNow'))}
             </Link>
           </div>
         </div>
@@ -139,26 +158,26 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
     return (
       <section className="px-6 py-16">
         <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2">
-          <h2 className="text-3xl font-black">{d.title || 'About event'}</h2>
-          <p className="text-lg leading-8 text-slate-600">{d.body || 'Noi dung su kien.'}</p>
+          <h2 className="text-3xl font-black app-strong">{asText(d.title, language, t(language, 'aboutEvent'))}</h2>
+          <p className="text-lg leading-8 app-muted">{asText(d.body, language, t(language, 'eventInfo'))}</p>
         </div>
       </section>
     );
   }
 
   if (section.type === 'agenda') {
-    const items = asArray(d.items).map(agendaItem);
+    const items = asArray(d.items).map((item) => agendaItem(item, language));
 
     return (
-      <section className="bg-slate-50 px-6 py-16">
+      <section className="app-surface-alt px-6 py-16">
         <div className="mx-auto max-w-4xl">
-          <h2 className="mb-8 text-3xl font-black">{d.title || 'Agenda'}</h2>
+          <h2 className="mb-8 text-3xl font-black app-strong">{asText(d.title, language, t(language, 'agenda'))}</h2>
           <div className="space-y-4">
             {items.map((item, index) => (
-              <div key={index} className="rounded-2xl border bg-white p-5 shadow-sm">
-                {item.time ? <div className="mb-2 text-sm font-bold text-blue-600">{item.time}</div> : null}
-                <div className="font-semibold">{item.title}</div>
-                {item.description ? <p className="mt-2 text-sm text-slate-600">{item.description}</p> : null}
+              <div key={index} className="rounded-2xl border app-border app-panel p-5 shadow-sm">
+                {item.time ? <div className="mb-2 text-sm font-bold" style={{ color: theme.primary }}>{item.time}</div> : null}
+                <div className="font-semibold app-strong">{item.title}</div>
+                {item.description ? <p className="mt-2 text-sm app-muted">{item.description}</p> : null}
               </div>
             ))}
           </div>
@@ -168,24 +187,24 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
   }
 
   if (section.type === 'speakers') {
-    const items = asArray(d.items).length ? asArray(d.items).map(speakerItem) : ['Speaker A', 'Speaker B', 'Speaker C'].map(speakerItem);
+    const items = asArray(d.items).length ? asArray(d.items).map((item) => speakerItem(item, language)) : [null, null, null].map((item) => speakerItem(item, language));
 
     return (
       <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-8 text-3xl font-black">{d.title || 'Speakers'}</h2>
+          <h2 className="mb-8 text-3xl font-black app-strong">{asText(d.title, language, t(language, 'featuredSpeakers'))}</h2>
           <div className="grid gap-5 md:grid-cols-3">
             {items.map((item, index) => (
-              <div key={index} className="rounded-3xl border p-6 shadow-sm">
+              <div key={index} className="rounded-3xl border app-border app-panel p-6 shadow-sm">
                 {item.avatar ? (
-                  <img src={item.avatar} alt={item.name} className="mb-4 h-24 w-24 rounded-full bg-slate-100 object-cover" />
+                  <img src={item.avatar} alt={item.name} className="mb-4 h-24 w-24 rounded-full object-cover" style={{ background: 'var(--app-soft)' }} />
                 ) : (
-                  <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-400">
+                  <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full text-2xl font-bold" style={{ background: 'var(--app-soft)', color: 'var(--app-muted)' }}>
                     {item.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <h3 className="font-bold">{item.name}</h3>
-                <p className="text-sm text-slate-500">{item.position}</p>
+                <h3 className="font-bold app-strong">{item.name}</h3>
+                <p className="text-sm app-muted">{item.position}</p>
               </div>
             ))}
           </div>
@@ -195,17 +214,17 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
   }
 
   if (section.type === 'sponsors') {
-    const items = asArray(d.items).length ? asArray(d.items).map(sponsorItem) : ['Logo', 'Logo', 'Logo', 'Logo'].map(sponsorItem);
+    const items = asArray(d.items).length ? asArray(d.items).map((item) => sponsorItem(item, language)) : [null, null, null, null].map((item) => sponsorItem(item, language));
 
     return (
-      <section className="bg-slate-50 px-6 py-14">
+      <section className="app-surface-alt px-6 py-14">
         <div className="mx-auto max-w-5xl text-center">
-          <h2 className="text-2xl font-black">{d.title || 'Sponsors'}</h2>
+          <h2 className="text-2xl font-black app-strong">{asText(d.title, language, t(language, 'sponsors'))}</h2>
           <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
             {items.map((item, index) => (
-              <div key={index} className="rounded-2xl bg-white p-6 shadow-sm">
-                <div className="font-bold text-slate-500">{item.name}</div>
-                {item.tier ? <div className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-400">{item.tier}</div> : null}
+              <div key={index} className="rounded-2xl app-panel p-6 shadow-sm">
+                <div className="font-bold app-muted">{item.name}</div>
+                {item.tier ? <div className="mt-2 text-xs uppercase tracking-[0.2em] app-muted">{item.tier}</div> : null}
               </div>
             ))}
           </div>
@@ -217,11 +236,15 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
   if (section.type === 'form') {
     return (
       <section id="registration" className="px-6 py-16">
-        <div className="mx-auto max-w-3xl rounded-3xl border p-8 text-center shadow-sm">
-          <h2 className="text-3xl font-black">{d.title || 'Registration'}</h2>
-          <p className="mt-3 text-slate-500">Dien thong tin de xac nhan tham du.</p>
-          <Link href={registrationHref(projectSlug, formSlug)} className="mt-6 inline-flex rounded-2xl px-6 py-3 font-bold text-white" style={{ background: theme.primary }}>
-            Mo form dang ky
+        <div className="mx-auto max-w-3xl rounded-3xl border app-border app-panel p-8 text-center shadow-sm">
+          <h2 className="text-3xl font-black app-strong">{asText(d.title, language, t(language, 'registration'))}</h2>
+          <p className="mt-3 app-muted">{asText(d.description, language, t(language, 'fillRegistrationInfo'))}</p>
+          <Link
+            href={registrationHref(projectSlug, formSlug)}
+            className="mt-6 inline-flex rounded-2xl px-6 py-3 font-bold text-white"
+            style={{ background: theme.primary }}
+          >
+            {asText(d.button_text || d.cta, language, t(language, 'openRegistrationForm'))}
           </Link>
         </div>
       </section>
@@ -229,18 +252,16 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
   }
 
   if (section.type === 'faq') {
-    const items = asArray(d.items).length
-      ? asArray(d.items).map(faqItem)
-      : ['Su kien dien ra o dau?', 'Toi co nhan email xac nhan khong?'].map(faqItem);
+    const items = asArray(d.items).length ? asArray(d.items).map((item) => faqItem(item, language)) : [null, null].map((item) => faqItem(item, language));
 
     return (
       <section className="px-6 py-16">
         <div className="mx-auto max-w-3xl">
-          <h2 className="mb-6 text-3xl font-black">FAQ</h2>
+          <h2 className="mb-6 text-3xl font-black app-strong">{asText(d.title, language, t(language, 'faqTitle'))}</h2>
           {items.map((item, index) => (
-            <details key={index} className="mb-3 rounded-2xl border p-5">
-              <summary className="cursor-pointer font-bold">{item.question}</summary>
-              <p className="mt-3 text-slate-600">{item.answer}</p>
+            <details key={index} className="mb-3 rounded-2xl border app-border app-panel p-5">
+              <summary className="cursor-pointer font-bold app-strong">{item.question}</summary>
+              <p className="mt-3 app-muted">{item.answer}</p>
             </details>
           ))}
         </div>
@@ -250,14 +271,14 @@ function Section({ section, theme, formSlug, projectSlug }: { section: PageSecti
 
   if (section.type === 'map') {
     return (
-      <section className="bg-slate-50 px-6 py-16">
+      <section className="app-surface-alt px-6 py-16">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black">Dia diem</h2>
-          <div className="mt-5 rounded-3xl bg-white p-10 text-slate-500 shadow-sm">{d.location || 'Ho Chi Minh City'}</div>
+          <h2 className="text-3xl font-black app-strong">{t(language, 'venue')}</h2>
+          <div className="mt-5 rounded-3xl app-panel p-10 shadow-sm app-muted">{asText(d.location, language, t(language, 'venueFallback'))}</div>
         </div>
       </section>
     );
   }
 
-  return <footer className="bg-slate-950 px-6 py-10 text-center text-white">{d.text || '© Delfi Event Studio'}</footer>;
+  return <footer className="px-6 py-10 text-center" style={{ background: theme.secondary, color: '#ffffff' }}>{asText(d.text, language, '© Delfi Event Studio')}</footer>;
 }

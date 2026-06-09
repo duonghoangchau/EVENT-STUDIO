@@ -1,22 +1,25 @@
 import Link from 'next/link';
 import { AdminBreadcrumbs } from '@/components/admin-breadcrumbs';
+import { PreferenceLanguage, t } from '@/lib/preferences';
 
 type ProjectSection = 'overview' | 'builder' | 'forms' | 'submissions';
 
-const sectionOrder: Array<{ key: ProjectSection; label: string; href: (projectId: number) => string }> = [
-  { key: 'overview', label: 'Overview', href: (projectId) => `/admin/projects/${projectId}` },
-  { key: 'builder', label: 'Builder', href: (projectId) => `/admin/projects/${projectId}/builder` },
-  { key: 'forms', label: 'Forms', href: (projectId) => `/admin/projects/${projectId}/forms` },
-  { key: 'submissions', label: 'Submissions', href: (projectId) => `/admin/projects/${projectId}/submissions` },
+const sectionOrder: Array<{ key: ProjectSection; translationKey: 'overview' | 'builder' | 'forms' | 'submissions'; href: (projectId: number) => string }> = [
+  { key: 'overview', translationKey: 'overview', href: (projectId) => `/admin/projects/${projectId}` },
+  { key: 'builder', translationKey: 'builder', href: (projectId) => `/admin/projects/${projectId}/builder` },
+  { key: 'forms', translationKey: 'forms', href: (projectId) => `/admin/projects/${projectId}/forms` },
+  { key: 'submissions', translationKey: 'submissions', href: (projectId) => `/admin/projects/${projectId}/submissions` },
 ];
 
 export function AdminProjectNav({
   current,
+  language,
   projectId,
   projectName,
   projectSlug,
 }: {
   current: ProjectSection;
+  language: PreferenceLanguage;
   projectId: number;
   projectName: string;
   projectSlug: string;
@@ -30,29 +33,29 @@ export function AdminProjectNav({
       <AdminBreadcrumbs
         items={[
           { label: 'Admin', href: '/admin' },
-          { label: 'Projects', href: '/admin/projects' },
+          { label: t(language, 'projects'), href: '/admin/projects' },
           { label: projectName, href: `/admin/projects/${projectId}` },
-          { label: sectionOrder.find((section) => section.key === current)?.label || 'Section' },
+          { label: t(language, sectionOrder.find((section) => section.key === current)?.translationKey || 'overview') },
         ]}
       />
 
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+      <div className="rounded-3xl border app-border app-surface-alt p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Project workspace</div>
-            <div className="mt-2 text-2xl font-black text-slate-950">{projectName}</div>
-            <div className="mt-1 text-sm text-slate-500">/{projectSlug}</div>
+            <div className="text-sm font-semibold uppercase tracking-[0.18em] app-muted">{t(language, 'projectWorkspace')}</div>
+            <div className="mt-2 text-2xl font-black app-strong">{projectName}</div>
+            <div className="mt-1 text-sm app-muted">/{projectSlug}</div>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <Link href="/admin/projects" className="btn-secondary">
-              Back to Projects
+              {t(language, 'backToProjects')}
             </Link>
             <Link href={`/${projectSlug}`} target="_blank" className="btn-secondary">
-              Public Site
+              {t(language, 'publicSite')}
             </Link>
             <Link href={`/admin/preview/${projectSlug}`} target="_blank" className="btn-secondary">
-              Preview
+              {t(language, 'preview')}
             </Link>
           </div>
         </div>
@@ -65,26 +68,26 @@ export function AdminProjectNav({
                 key={section.key}
                 href={section.href(projectId)}
                 className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                  isActive ? 'bg-slate-950 text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950'
+                  isActive ? 'app-inverse shadow-sm' : 'border app-border app-surface app-muted'
                 }`}
               >
-                {section.label}
+                {t(language, section.translationKey)}
               </Link>
             );
           })}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <div className="text-sm text-slate-500">Use Previous/Next to move through the project workflow without jumping back to the main menu.</div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t app-border pt-4">
+          <div className="text-sm app-muted">{t(language, 'workflowHint')}</div>
           <div className="flex flex-wrap gap-2">
             {previous ? (
               <Link href={previous.href(projectId)} className="btn-secondary">
-                Previous: {previous.label}
+                {t(language, 'previous')}: {t(language, previous.translationKey)}
               </Link>
             ) : null}
             {next ? (
               <Link href={next.href(projectId)} className="btn-primary">
-                Next: {next.label}
+                {t(language, 'next')}: {t(language, next.translationKey)}
               </Link>
             ) : null}
           </div>

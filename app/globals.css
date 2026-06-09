@@ -1,34 +1,91 @@
 @import "tailwindcss";
 
-:root { color-scheme: light; }
-body { background: #f8fafc; color: #0f172a; }
+:root {
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --app-surface: #ffffff;
+  --app-surface-alt: #f8fafc;
+  --app-panel: #ffffff;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
+  --app-strong: #0f172a;
+  --app-muted: #64748b;
+  --app-soft: #f1f5f9;
+  --app-inverse: #ffffff;
+  --app-inverse-surface: #020617;
+  --app-primary: #2563eb;
+  --app-primary-hover: #1d4ed8;
+  --app-primary-soft: #dbeafe;
+  --app-primary-soft-text: #1d4ed8;
+  --app-success-soft: #dcfce7;
+  --app-success-text: #047857;
+  --app-danger-soft: #fef2f2;
+  --app-danger-border: #fecaca;
+  --app-danger-text: #b91c1c;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-surface-alt: #111827;
+  --app-panel: #0b1220;
+  --app-border: #1e293b;
+  --app-text: #e2e8f0;
+  --app-strong: #f8fafc;
+  --app-muted: #94a3b8;
+  --app-soft: #172033;
+  --app-inverse: #020617;
+  --app-inverse-surface: #f8fafc;
+  --app-primary: #60a5fa;
+  --app-primary-hover: #3b82f6;
+  --app-primary-soft: #1e3a8a;
+  --app-primary-soft-text: #bfdbfe;
+  --app-success-soft: #052e16;
+  --app-success-text: #6ee7b7;
+  --app-danger-soft: #3f0d12;
+  --app-danger-border: #7f1d1d;
+  --app-danger-text: #fca5a5;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color 150ms ease, color 150ms ease;
+}
 
 .section-shell {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border);
   border-radius: 1.5rem;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+  background: var(--app-surface);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
 }
 
 .input {
   width: 100%;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border);
   border-radius: 0.75rem;
-  background: #ffffff;
+  background: var(--app-panel);
+  color: var(--app-text);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   outline: none;
 }
 
 .input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #dbeafe;
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 2px var(--app-primary-soft);
 }
 
 .label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--app-strong);
 }
 
 .btn-primary,
@@ -44,20 +101,190 @@ body { background: #f8fafc; color: #0f172a; }
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: var(--app-primary);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--app-primary-hover);
 }
 
 .btn-secondary {
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-strong);
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
+  background: var(--app-soft);
+}
+
+.app-surface {
+  background: var(--app-surface);
+}
+
+.app-surface-alt {
+  background: var(--app-surface-alt);
+}
+
+.app-panel {
+  background: var(--app-panel);
+}
+
+.app-border {
+  border-color: var(--app-border);
+}
+
+.app-text {
+  color: var(--app-text);
+}
+
+.app-strong {
+  color: var(--app-strong);
+}
+
+.app-muted {
+  color: var(--app-muted);
+}
+
+.app-soft {
+  background: var(--app-soft);
+}
+
+.app-inverse {
+  background: var(--app-inverse-surface);
+  color: var(--app-inverse);
+}
+
+.app-danger {
+  border-color: var(--app-danger-border);
+  background: var(--app-danger-soft);
+  color: var(--app-danger-text);
+}
+
+.app-nav-link {
+  color: var(--app-muted);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.app-nav-link:hover {
+  background: var(--app-soft);
+  color: var(--app-strong);
+}
+
+.preference-dock {
+  border-color: var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+}
+
+.preference-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.preference-group {
+  display: flex;
+  border: 1px solid var(--app-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: var(--app-soft);
+}
+
+.preference-option {
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 0.62rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--app-muted);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.preference-option.is-active {
+  background: var(--app-primary);
+  color: #ffffff;
+}
+
+.preview-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border) transparent;
+}
+
+.public-preference-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.public-preference-popover {
+  border-color: var(--app-border);
+  background: color-mix(in srgb, var(--app-surface) 94%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.public-preference-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+  color: var(--app-strong);
+  padding: 0.55rem 0.85rem;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.12);
+  backdrop-filter: blur(18px);
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.public-preference-trigger:hover {
+  transform: translateY(-1px);
+}
+
+.public-preference-trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: var(--app-primary);
+  color: #ffffff;
+}
+
+.public-preference-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--app-border);
+}
+
+.public-preference-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  color: var(--app-muted);
+  background: var(--app-soft);
+}
+
+@media (max-width: 767px) {
+  .public-preference-trigger {
+    padding: 0.45rem;
+    border-radius: 999px;
+  }
+
+  .public-preference-popover {
+    width: min(84vw, 16.5rem);
+    padding: 0.9rem;
+  }
+
+  .preference-option {
+    padding: 0.58rem 0.65rem;
+    font-size: 0.78rem;
+  }
 }

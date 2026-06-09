@@ -4,6 +4,7 @@ import { PAGE_SECTION_TYPES, PageJson, PageSection, SectionType } from '@/lib/ty
 const sectionTypeSchema = z.enum(PAGE_SECTION_TYPES);
 export const SINGLE_INSTANCE_SECTION_TYPES: SectionType[] = ['hero', 'form', 'footer', 'map'];
 const singleInstanceSectionTypeSet = new Set<SectionType>(SINGLE_INSTANCE_SECTION_TYPES);
+
 export const SECTION_VARIANTS: Record<SectionType, string[]> = {
   hero: ['center', 'fullscreen', 'split'],
   about: ['two-column', 'stacked'],
@@ -29,6 +30,10 @@ const pageJsonSchema = z.object({
   sections: z.array(pageSectionSchema).default([]),
 });
 
+function text(vi: string, en: string) {
+  return { vi, en };
+}
+
 export const SECTION_LIBRARY: Record<SectionType, { label: string; template: PageSection }> = {
   hero: {
     label: 'Hero',
@@ -39,10 +44,14 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        badge: 'Featured event',
-        title: 'Professional event landing page',
-        subtitle: 'Introduce your conference, roadshow, or annual summit with a clear first impression.',
-        cta: 'Register now',
+        badge: text('Sự kiện nổi bật', 'Featured event'),
+        title: text('Landing page sự kiện chuyên nghiệp', 'Professional event landing page'),
+        subtitle: text(
+          'Giới thiệu hội nghị, roadshow hoặc sự kiện thường niên với ấn tượng đầu tiên rõ ràng.',
+          'Introduce your conference, roadshow, or annual summit with a clear first impression.'
+        ),
+        cta: text('Đăng ký ngay', 'Register now'),
+        secondary_cta: text('Xem thêm', 'Learn more'),
       },
     },
   },
@@ -55,8 +64,11 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        title: 'About the event',
-        body: 'Use this block to explain the event story, value proposition, and audience fit.',
+        title: text('Tổng quan sự kiện', 'About the event'),
+        body: text(
+          'Dùng khối này để mô tả câu chuyện sự kiện, giá trị nổi bật và nhóm khách mời phù hợp.',
+          'Use this block to explain the event story, value proposition, and audience fit.'
+        ),
       },
     },
   },
@@ -69,10 +81,10 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        title: 'Agenda',
+        title: text('Lịch trình', 'Agenda'),
         items: [
-          { time: '13:00', title: 'Check-in', description: 'Guest reception and welcome coffee.' },
-          { time: '14:00', title: 'Opening keynote', description: 'Vision, strategy, and event opening.' },
+          { time: '13:00', title: text('Đón khách', 'Check-in'), description: text('Đón tiếp khách mời và dùng cà phê nhẹ.', 'Guest reception and welcome coffee.') },
+          { time: '14:00', title: text('Phát biểu khai mạc', 'Opening keynote'), description: text('Tầm nhìn, chiến lược và phần mở đầu chương trình.', 'Vision, strategy, and event opening.') },
         ],
       },
     },
@@ -86,10 +98,10 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        title: 'Featured speakers',
+        title: text('Diễn giả nổi bật', 'Featured speakers'),
         items: [
-          { name: 'Speaker name', position: 'Title or organization', avatar: '' },
-          { name: 'Guest expert', position: 'Panelist', avatar: '' },
+          { name: text('Tên diễn giả', 'Speaker name'), position: text('Chức danh hoặc tổ chức', 'Title or organization'), avatar: '' },
+          { name: text('Chuyên gia khách mời', 'Guest expert'), position: text('Thành viên thảo luận', 'Panelist'), avatar: '' },
         ],
       },
     },
@@ -103,10 +115,10 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        title: 'Sponsors',
+        title: text('Nhà tài trợ', 'Sponsors'),
         items: [
-          { name: 'Sponsor One', tier: 'Gold' },
-          { name: 'Sponsor Two', tier: 'Silver' },
+          { name: text('Nhà tài trợ Một', 'Sponsor One'), tier: text('Vàng', 'Gold') },
+          { name: text('Nhà tài trợ Hai', 'Sponsor Two'), tier: text('Bạc', 'Silver') },
         ],
       },
     },
@@ -120,7 +132,9 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        title: 'Register for the event',
+        title: text('Đăng ký tham dự', 'Register for the event'),
+        description: text('Điền thông tin để xác nhận tham dự.', 'Fill in your details to confirm attendance.'),
+        button_text: text('Mở form đăng ký', 'Open registration form'),
       },
     },
   },
@@ -133,9 +147,10 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
+        title: text('Câu hỏi thường gặp', 'FAQ'),
         items: [
-          { question: 'Where is the event held?', answer: 'Venue details will be shared by the organizer.' },
-          { question: 'Will I receive a confirmation email?', answer: 'Yes, the system records your submission after registration.' },
+          { question: text('Sự kiện diễn ra ở đâu?', 'Where is the event held?'), answer: text('Thông tin địa điểm sẽ được ban tổ chức cập nhật.', 'Venue details will be shared by the organizer.') },
+          { question: text('Tôi có nhận email xác nhận không?', 'Will I receive a confirmation email?'), answer: text('Có, hệ thống sẽ ghi nhận đăng ký sau khi bạn gửi form.', 'Yes, the system records your submission after registration.') },
         ],
       },
     },
@@ -149,7 +164,7 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        location: 'Ho Chi Minh City',
+        location: text('Thành phố Hồ Chí Minh', 'Ho Chi Minh City'),
       },
     },
   },
@@ -162,7 +177,7 @@ export const SECTION_LIBRARY: Record<SectionType, { label: string; template: Pag
       order: 1,
       visible: true,
       data: {
-        text: '© Delfi Event Studio',
+        text: text('© Delfi Event Studio', '© Delfi Event Studio'),
       },
     },
   },
