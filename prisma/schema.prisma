@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  name         String
+  email        String         @unique
+  passwordHash String         @default("")
+  role         String         @default("developer")
+  createdAt    DateTime       @default(now())
+  projects     Project[]
+  sessions     AdminSession[]
+}
+
+model AdminSession {
+  id               String   @id @default(cuid())
+  userId           Int
+  sessionTokenHash String   @unique
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Project {
+  id          Int          @id @default(autoincrement())
+  name        String
+  slug        String       @unique
+  description String?      @db.Text
+  status      String       @default("draft")
+  language    String       @default("vi")
+  eventDate   DateTime?
+  location    String?
+  themeJson   Json
+  pageJson    Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  ownerId     Int?
+  owner       User?        @relation(fields: [ownerId], references: [id])
+  forms       EventForm[]
+  submissions Submission[]
+}
+
+model EventForm {
+  id          Int          @id @default(autoincrement())
+  projectId   Int
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String       @unique
+  schemaJson  Json
+  createdAt   DateTime     @default(now())
+  submissions Submission[]
+}
+
+model Submission {
+  id        Int       @id @default(autoincrement())
+  projectId Int
+  formId    Int
+  dataJson  Json
+  sourceUrl String?
+  createdAt DateTime  @default(now())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  form      EventForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id           Int      @id @default(autoincrement())
+  name         String
+  category     String
+  previewImage String?
+  templateJson Json
+  themeJson    Json
+  createdAt    DateTime @default(now())
+}
+
+model Asset {
+  id        Int      @id @default(autoincrement())
+  type      String
+  filename  String
+  path      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model AiGeneration {
+  id         Int      @id @default(autoincrement())
+  projectId  Int?
+  prompt     String   @db.Text
+  resultJson Json
+  status     String   @default("success")
+  createdAt  DateTime @default(now())
+}

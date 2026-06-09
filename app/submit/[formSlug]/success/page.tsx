@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function SuccessPage(){return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-5"><div className="max-w-xl rounded-3xl bg-white p-10 text-center shadow-sm"><div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">✓</div><h1 className="text-3xl font-black">Đăng ký thành công</h1><p className="mt-3 text-slate-500">Thông tin của bạn đã được ghi nhận.</p><Link href="/" className="btn-primary mt-6">Về trang chủ</Link></div></div>}
