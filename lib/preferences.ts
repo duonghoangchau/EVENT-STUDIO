@@ -148,7 +148,18 @@ type TranslationKey =
   | 'projectsDescription'
   | 'newProject'
   | 'submissionsLabel'
-  | 'formsLabel';
+  | 'formsLabel'
+  | 'heroImageUrl'
+  | 'heroPrimaryColor'
+  | 'heroSecondaryColor'
+  | 'heroBackgroundHint'
+  | 'heroOverlayOpacity'
+  | 'heroOverlayHint'
+  | 'showHeroBadge'
+  | 'showHeroTitle'
+  | 'showHeroSubtitle'
+  | 'showHeroPrimaryCta'
+  | 'showHeroSecondaryCta';
 
 const TRANSLATIONS: Record<PreferenceLanguage, Record<TranslationKey, string>> = {
   vi: {
@@ -286,6 +297,17 @@ const TRANSLATIONS: Record<PreferenceLanguage, Record<TranslationKey, string>> =
     newProject: 'Tạo mới',
     submissionsLabel: 'Đăng ký',
     formsLabel: 'Biểu mẫu',
+    heroImageUrl: 'Link ảnh nền Hero',
+    heroPrimaryColor: 'Màu nền chính',
+    heroSecondaryColor: 'Màu nền phụ',
+    heroBackgroundHint: 'Gợi ý: dùng ảnh ngang 16:9, tối thiểu 1600x900. Tốt nhất là 1920x1080, chủ thể chính đặt ở giữa để mobile không bị cắt.',
+    heroOverlayOpacity: 'Độ phủ trên ảnh',
+    heroOverlayHint: 'Giảm về gần 0% nếu muốn giữ ảnh rõ và ít lớp mờ hơn.',
+    showHeroBadge: 'Hiển thị badge',
+    showHeroTitle: 'Hiển thị tiêu đề',
+    showHeroSubtitle: 'Hiển thị mô tả',
+    showHeroPrimaryCta: 'Hiển thị CTA chính',
+    showHeroSecondaryCta: 'Hiển thị CTA phụ',
   },
   en: {
     dashboard: 'Dashboard',
@@ -422,6 +444,17 @@ const TRANSLATIONS: Record<PreferenceLanguage, Record<TranslationKey, string>> =
     newProject: 'Create new',
     submissionsLabel: 'submissions',
     formsLabel: 'forms',
+    heroImageUrl: 'Hero background image URL',
+    heroPrimaryColor: 'Primary background color',
+    heroSecondaryColor: 'Secondary background color',
+    heroBackgroundHint: 'Recommended: use a 16:9 landscape image, at least 1600x900. 1920x1080 works best, with the main subject kept near the center for mobile cropping.',
+    heroOverlayOpacity: 'Image overlay strength',
+    heroOverlayHint: 'Lower this close to 0% if you want the photo to look clearer with less haze.',
+    showHeroBadge: 'Show badge',
+    showHeroTitle: 'Show title',
+    showHeroSubtitle: 'Show description',
+    showHeroPrimaryCta: 'Show primary CTA',
+    showHeroSecondaryCta: 'Show secondary CTA',
   },
 };
 

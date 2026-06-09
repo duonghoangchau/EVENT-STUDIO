@@ -93,6 +93,52 @@ function registrationHref(projectSlug?: string, formSlug?: string) {
   return '#registration';
 }
 
+function asPlainString(value: unknown, fallback = '') {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+function normalizeHexColor(value: unknown, fallback: string) {
+  const candidate = asPlainString(value);
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(candidate) ? candidate : fallback;
+}
+
+function normalizeOverlayStrength(value: unknown, fallback = 18) {
+  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  if (Number.isFinite(numeric)) {
+    return Math.min(85, Math.max(0, numeric));
+  }
+
+  return fallback;
+}
+
+function normalizeBooleanValue(value: unknown, fallback = true) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+  }
+
+  return fallback;
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const safeHex = hex.replace('#', '');
+  const normalized = safeHex.length === 3 ? safeHex.split('').map((char) => `${char}${char}`).join('') : safeHex;
+
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return `rgba(15, 23, 42, ${alpha})`;
+  }
+
+  const int = Number.parseInt(normalized, 16);
+  const r = (int >> 16) & 255;
+  const g = (int >> 8) & 255;
+  const b = int & 255;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function LandingRenderer({
   sections,
   theme,
@@ -133,22 +179,82 @@ function Section({
   const d = section.data || {};
 
   if (section.type === 'hero') {
+    const heroPrimary = normalizeHexColor(d.background_primary, theme.primary);
+    const heroSecondary = normalizeHexColor(d.background_secondary, theme.secondary);
+    const heroImage = asPlainString(d.background_image);
+    const overlayStrength = normalizeOverlayStrength(d.background_overlay, 18) / 100;
+    const showBadge = normalizeBooleanValue(d.show_badge, true);
+    const showTitle = normalizeBooleanValue(d.show_title, true);
+    const showSubtitle = normalizeBooleanValue(d.show_subtitle, true);
+    const showPrimaryCta = normalizeBooleanValue(d.show_primary_cta, true);
+    const showSecondaryCta = normalizeBooleanValue(d.show_secondary_cta, true);
+    const hasSecondaryCtaText = Boolean(asText(d.secondary_cta, language).trim());
+    const hasAnyHeroContent = showBadge || showTitle || showSubtitle || showPrimaryCta || (showSecondaryCta && hasSecondaryCtaText);
+    const useImageOnlyLayout = Boolean(heroImage) && !hasAnyHeroContent;
+    const heroBackgroundStyle = heroImage
+      ? {
+          backgroundImage: `linear-gradient(135deg, ${hexToRgba(heroPrimary, overlayStrength)}, ${hexToRgba(
+            heroSecondary,
+            Math.min(overlayStrength + 0.08, 0.92)
+          )}), url("${heroImage}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }
+      : {
+          background: `linear-gradient(135deg, ${heroPrimary}, ${heroSecondary})`,
+        };
+
+    if (useImageOnlyLayout) {
+      return (
+        <section className="relative overflow-hidden app-surface">
+          <img
+            src={heroImage}
+            alt={asText(d.title, language, t(language, 'eventLandingPage')) || 'Hero image'}
+            className="block h-auto w-full"
+          />
+        </section>
+      );
+    }
+
     return (
       <section
         className="relative overflow-hidden px-6 py-24 text-center"
-        style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
+        style={heroBackgroundStyle}
       >
         <div className="mx-auto max-w-4xl text-white">
-          <div className="mb-5 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
-            {asText(d.badge, language, t(language, 'event'))}
-          </div>
-          <h1 className="text-4xl font-black tracking-tight md:text-6xl">{asText(d.title, language, t(language, 'eventLandingPage'))}</h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-white/85">{asText(d.subtitle, language, t(language, 'eventInfo'))}</p>
-          <div className="mt-8">
-            <Link href={registrationHref(projectSlug, formSlug)} className="rounded-2xl bg-white px-6 py-3 font-bold text-slate-950 shadow-lg">
-              {asText(d.cta, language, t(language, 'registerNow'))}
-            </Link>
-          </div>
+          {showBadge ? (
+            <div className="mb-5 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
+              {asText(d.badge, language, t(language, 'event'))}
+            </div>
+          ) : null}
+          {showTitle ? (
+            <h1 className="text-4xl font-black tracking-tight md:text-6xl" style={{ textShadow: heroImage ? '0 6px 24px rgba(15,23,42,0.32)' : undefined }}>
+              {asText(d.title, language, t(language, 'eventLandingPage'))}
+            </h1>
+          ) : null}
+          {showSubtitle ? (
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-white/90" style={{ textShadow: heroImage ? '0 4px 18px rgba(15,23,42,0.24)' : undefined }}>
+              {asText(d.subtitle, language, t(language, 'eventInfo'))}
+            </p>
+          ) : null}
+          {showPrimaryCta || (showSecondaryCta && hasSecondaryCtaText) ? (
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              {showPrimaryCta ? (
+                <Link href={registrationHref(projectSlug, formSlug)} className="rounded-2xl bg-white px-6 py-3 font-bold text-slate-950 shadow-lg">
+                  {asText(d.cta, language, t(language, 'registerNow'))}
+                </Link>
+              ) : null}
+              {showSecondaryCta && hasSecondaryCtaText ? (
+                <Link
+                  href="#registration"
+                  className="rounded-2xl border border-white/35 bg-white/10 px-6 py-3 font-bold text-white shadow-lg backdrop-blur"
+                >
+                  {asText(d.secondary_cta, language)}
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
     );

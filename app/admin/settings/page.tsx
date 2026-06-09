@@ -13,7 +13,7 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-black app-strong">{t(preferences.language, 'settings')}</h1>
         <p className="mt-3 app-muted">
           {preferences.language === 'vi'
-            ? 'Noi nay dung de quan ly tuy chon giao dien quan tri va cac cau hinh he thong o cac phien ban tiep theo.'
+            ? 'Nơi này dùng để quản lý các tùy chọn giao diện quản trị và các cấu hình hệ thống ở những phiên bản tiếp theo.'
             : 'Use this area to manage admin display preferences and future system configuration options.'}
         </p>
       </div>

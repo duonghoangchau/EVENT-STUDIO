@@ -26,6 +26,11 @@ export const defaultSections: PageSection[] = [
       subtitle: text('Tạo landing page sự kiện nhanh bằng template và giao diện có sẵn.', 'Launch an event page quickly with ready-made templates and visual themes.'),
       cta: text('Đăng ký tham dự', 'Register now'),
       secondary_cta: text('Xem chương trình', 'See agenda'),
+      show_badge: true,
+      show_title: true,
+      show_subtitle: true,
+      show_primary_cta: true,
+      show_secondary_cta: true,
     },
   },
   {

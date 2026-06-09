@@ -198,6 +198,47 @@ function LocalizedTextInput({
   );
 }
 
+function RawInput({
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+}: {
+  type?: 'text' | 'url';
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return <input className="input" type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />;
+}
+
+function normalizeColorValue(value: unknown, fallback: string) {
+  if (typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim())) {
+    return value.trim();
+  }
+
+  return fallback;
+}
+
+function normalizeOverlayStrength(value: unknown, fallback = 18) {
+  const numeric = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+  if (Number.isFinite(numeric)) {
+    return Math.min(85, Math.max(0, Math.round(numeric)));
+  }
+
+  return fallback;
+}
+
+function normalizeBooleanValue(value: unknown, fallback = true) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+  }
+
+  return fallback;
+}
+
 function SectionFields({
   section,
   onChange,
@@ -216,6 +257,18 @@ function SectionFields({
   );
 
   if (section.type === 'hero') {
+    const primaryColor = normalizeColorValue(data.background_primary, '#2563EB');
+    const secondaryColor = normalizeColorValue(data.background_secondary, '#0F172A');
+    const backgroundImage = typeof data.background_image === 'string' ? data.background_image : '';
+    const overlayStrength = normalizeOverlayStrength(data.background_overlay, 18);
+    const visibilityToggles = [
+      { key: 'show_badge', label: translate('showHeroBadge') },
+      { key: 'show_title', label: translate('showHeroTitle') },
+      { key: 'show_subtitle', label: translate('showHeroSubtitle') },
+      { key: 'show_primary_cta', label: translate('showHeroPrimaryCta') },
+      { key: 'show_secondary_cta', label: translate('showHeroSecondaryCta') },
+    ] as const;
+
     return (
       <div className="grid gap-4">
         {localTextField(translate('badge'), 'badge')}
@@ -223,6 +276,67 @@ function SectionFields({
         {localTextField(translate('subtitle'), 'subtitle', { multiline: true })}
         {localTextField(translate('primaryCta'), 'cta')}
         {localTextField(translate('secondaryCta'), 'secondary_cta')}
+        <label className="block">
+          <span className="label">{translate('heroImageUrl')}</span>
+          <div className="mt-2">
+            <RawInput type="url" value={backgroundImage} placeholder="https://images.example.com/hero.jpg" onChange={(value) => setDataValueRaw('background_image', value)} />
+          </div>
+          <p className="mt-2 text-xs app-muted">{translate('heroBackgroundHint')}</p>
+        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="label">{translate('heroPrimaryColor')}</span>
+            <div className="mt-2 flex items-center gap-3">
+              <input
+                className="h-11 w-14 cursor-pointer rounded-xl border app-border app-panel p-1"
+                type="color"
+                value={primaryColor}
+                onChange={(event) => setDataValueRaw('background_primary', event.target.value)}
+              />
+              <RawInput value={primaryColor} onChange={(value) => setDataValueRaw('background_primary', value)} />
+            </div>
+          </label>
+          <label className="block">
+            <span className="label">{translate('heroSecondaryColor')}</span>
+            <div className="mt-2 flex items-center gap-3">
+              <input
+                className="h-11 w-14 cursor-pointer rounded-xl border app-border app-panel p-1"
+                type="color"
+                value={secondaryColor}
+                onChange={(event) => setDataValueRaw('background_secondary', event.target.value)}
+              />
+              <RawInput value={secondaryColor} onChange={(value) => setDataValueRaw('background_secondary', value)} />
+            </div>
+          </label>
+        </div>
+        <label className="block">
+          <span className="label">{translate('heroOverlayOpacity')}</span>
+          <div className="mt-2 flex items-center gap-4">
+            <input
+              className="w-full accent-blue-600"
+              type="range"
+              min="0"
+              max="85"
+              step="1"
+              value={overlayStrength}
+              onChange={(event) => setDataValueRaw('background_overlay', Number(event.target.value))}
+            />
+            <div className="min-w-16 rounded-xl app-soft px-3 py-2 text-center text-sm font-semibold app-strong">{overlayStrength}%</div>
+          </div>
+          <p className="mt-2 text-xs app-muted">{translate('heroOverlayHint')}</p>
+        </label>
+        <div className="grid gap-3 md:grid-cols-2">
+          {visibilityToggles.map((toggle) => (
+            <label key={toggle.key} className="inline-flex items-center gap-2 rounded-2xl border app-border app-surface-alt px-4 py-3 text-sm font-medium app-strong">
+              <input
+                checked={normalizeBooleanValue(data[toggle.key], true)}
+                type="checkbox"
+                onChange={(event) => setDataValueRaw(toggle.key, event.target.checked)}
+              />
+              {toggle.label}
+            </label>
+          ))}
+        </div>
       </div>
     );
   }

@@ -134,7 +134,7 @@ export function PreferenceSettingsPanel() {
           <h2 className="text-xl font-black app-strong">{translate('settings')}</h2>
           <p className="mt-1 text-sm app-muted">
             {language === 'vi'
-              ? 'Dieu chinh ngon ngu va che do sang/toi cho khu vuc quan tri. Lua chon duoc luu lai va ap dung ngay.'
+              ? 'Điều chỉnh ngôn ngữ và chế độ sáng/tối cho khu vực quản trị. Các tùy chọn sẽ được lưu lại và áp dụng ngay lập tức.'
               : 'Adjust language and light/dark mode for the admin workspace. Your choice is saved and applied immediately.'}
           </p>
         </div>

@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
+import { getAdminFlashLanguage, setAdminFlash } from '@/lib/admin-flash';
 import { clearAdminSession, createAdminSession, requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { normalizeFormSchema } from '@/lib/form-schema';
@@ -45,6 +46,22 @@ function cleanJsonInput(input: string) {
     .replace(/^```\s*/i, '')
     .replace(/```$/i, '')
     .trim();
+}
+
+async function notifyAdminFlash(
+  type: 'success' | 'error' | 'info',
+  messages: {
+    vi: { title: string; message: string };
+    en: { title: string; message: string };
+  }
+) {
+  const language = await getAdminFlashLanguage();
+  const selected = language === 'en' ? messages.en : messages.vi;
+  await setAdminFlash({
+    type,
+    title: selected.title,
+    message: selected.message,
+  });
 }
 
 async function saveUploadedFile(projectId: number, formId: number, field: FormField, file: File) {
@@ -95,13 +112,23 @@ export async function createProject(formData: FormData) {
   });
   const formSlug = await ensureUniqueSlug(`${slug}-registration`, 'eventForm');
   await prisma.eventForm.create({ data: { projectId: project.id, name: 'Main Registration', slug: formSlug, schemaJson: defaultFormSchema } });
+  await notifyAdminFlash('success', {
+    vi: { title: 'Tạo project thành công', message: `Project "${name}" đã được tạo và sẵn sàng để chỉnh sửa.` },
+    en: { title: 'Project created', message: `Project "${name}" has been created and is ready to edit.` },
+  });
   redirect(`/admin/projects/${project.id}/builder`);
 }
 
 export async function createProjectFromTemplate(templateId: number) {
   const admin = await requireAdmin();
   const template = await prisma.template.findUnique({ where: { id: templateId } });
-  if (!template) return;
+  if (!template) {
+    await notifyAdminFlash('error', {
+      vi: { title: 'Không tìm thấy template', message: 'Template đã chọn không còn tồn tại hoặc đã bị xóa.' },
+      en: { title: 'Template not found', message: 'The selected template no longer exists or has been removed.' },
+    });
+    redirect('/admin/templates');
+  }
 
   const stamp = new Date().toISOString().slice(0, 10);
   const name = `${template.name} ${stamp}`;
@@ -129,6 +156,10 @@ export async function createProjectFromTemplate(templateId: number) {
     },
   });
 
+  await notifyAdminFlash('success', {
+    vi: { title: 'Tạo project từ template thành công', message: `Project "${name}" đã được tạo từ template "${template.name}".` },
+    en: { title: 'Project created from template', message: `Project "${name}" was created from template "${template.name}".` },
+  });
   redirect(`/admin/projects/${project.id}/builder`);
 }
 
@@ -140,6 +171,10 @@ export async function updateProjectMeta(projectId: number, formData: FormData) {
     location: String(formData.get('location') || ''),
     language: String(formData.get('language') || 'vi'),
   }});
+  await notifyAdminFlash('success', {
+    vi: { title: 'Cập nhật thông tin thành công', message: `Thông tin project "${project.name}" đã được lưu.` },
+    en: { title: 'Project details updated', message: `Project details for "${project.name}" have been saved.` },
+  });
   revalidatePath(`/admin/projects/${projectId}`);
   revalidatePath(`/${project.slug}`);
 }
@@ -170,6 +205,10 @@ export async function updateSections(projectId: number, formData: FormData) {
     const raw = cleanJsonInput(String(formData.get('pageJson') || '{}'));
     const parsed = normalizePageJson(JSON.parse(raw));
     await prisma.project.update({ where: { id: projectId }, data: { pageJson: parsed } });
+    await notifyAdminFlash('success', {
+      vi: { title: 'Lưu page thành công', message: 'Bố cục và nội dung landing page đã được cập nhật.' },
+      en: { title: 'Page saved', message: 'The landing page layout and content have been updated.' },
+    });
     revalidatePath(`/admin/projects/${projectId}/builder`);
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (project) {
@@ -178,6 +217,10 @@ export async function updateSections(projectId: number, formData: FormData) {
     }
   } catch (error) {
     console.error(`Invalid page JSON for project ${projectId}:`, error);
+    await notifyAdminFlash('error', {
+      vi: { title: 'Không thể lưu page', message: 'Dữ liệu page không hợp lệ. Vui lòng kiểm tra lại nội dung vừa chỉnh sửa.' },
+      en: { title: 'Unable to save page', message: 'The page data is invalid. Please review the content you just edited.' },
+    });
   }
 }
 
@@ -197,6 +240,10 @@ export async function updateFormSchema(formId: number, formData: FormData) {
 
     const form = await prisma.eventForm.findUnique({ where: { id: formId } });
     if (!form) return;
+    await notifyAdminFlash('success', {
+      vi: { title: 'Lưu form thành công', message: 'Schema form đăng ký đã được cập nhật.' },
+      en: { title: 'Form saved', message: 'The registration form schema has been updated.' },
+    });
 
     const project = await prisma.project.findUnique({ where: { id: form.projectId } });
     revalidatePath(`/admin/projects/${form.projectId}/forms`);
@@ -204,6 +251,10 @@ export async function updateFormSchema(formId: number, formData: FormData) {
     if (project) revalidatePath(`/${project.slug}/register`);
   } catch (error) {
     console.error(`Invalid form schema for form ${formId}:`, error);
+    await notifyAdminFlash('error', {
+      vi: { title: 'Không thể lưu form', message: 'Schema form không hợp lệ. Vui lòng kiểm tra lại cấu hình vừa chỉnh sửa.' },
+      en: { title: 'Unable to save form', message: 'The form schema is invalid. Please review the configuration you just edited.' },
+    });
   }
 }
 
